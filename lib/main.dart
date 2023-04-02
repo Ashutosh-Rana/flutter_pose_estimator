@@ -1,6 +1,7 @@
 import 'package:camera/camera.dart';
-import 'package:demo/src/pose_detector_view.dart';
+// import 'package:demo/src/pose_detector_view.dart';
 import 'package:flutter/material.dart';
+import 'package:google_ml_kit_example/src/detector_views.dart';
 
 
 
@@ -100,7 +101,7 @@ class CustomCard extends StatelessWidget {
           } else {
             Navigator.push(
                 context, MaterialPageRoute(builder: (context) => _viewPage));
-          }
+           }
         },
       ),
     );
