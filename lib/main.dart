@@ -1,228 +1,189 @@
-// import 'package:camera/camera.dart';
-// // import 'package:demo/src/pose_detector_view.dart';
-// import 'package:flutter/material.dart';
-// import 'package:google_ml_kit_example/src/detector_views.dart';
-
-
-
-// List<CameraDescription> cameras = [];
-
-// Future<void> main() async {
-//   WidgetsFlutterBinding.ensureInitialized();
-
-//   try {
-//     cameras = await availableCameras();
-
-//   } on CameraException catch (e) {
-//    print('${e.code}  ${e.description}');
-//   }
-
-//   runApp(MyApp());
-// }
-
-// class MyApp extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       debugShowCheckedModeBanner: false,
-//       home: Home(),
-//     );
-//   }
-// }
-
-// class Home extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text('Google ML Kit Demo App'),
-//         centerTitle: true,
-//         elevation: 0,
-//       ),
-//       body: SafeArea(
-//         child: Center(
-//           child: SingleChildScrollView(
-//             child: Padding(
-//               padding: EdgeInsets.symmetric(horizontal: 16),
-//               child: Column(
-//                 children: [
-//                   ExpansionTile(
-//                     title: const Text('Vision APIs'),
-//                     children: [
-//                       CustomCard('Pose Detection', PoseDetectorView()),
-//                     ],
-//                   ),
-//                   SizedBox(
-//                     height: 20,
-//                   ),
-//                   // ExpansionTile(
-//                   //   title: const Text('Natural Language APIs'),
-//                   //   children: [
-//                   //     CustomCard('Language ID', LanguageIdentifierView()),
-//                   //     CustomCard(
-//                   //         'On-device Translation', LanguageTranslatorView()),
-//                   //     CustomCard('Smart Reply', SmartReplyView()),
-//                   //     CustomCard('Entity Extraction', EntityExtractionView()),
-//                   //   ],
-//                   // ),
-//                 ],
-//               ),
-//             ),
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-// class CustomCard extends StatelessWidget {
-//   final String _label;
-//   final Widget _viewPage;
-//   final bool featureCompleted;
-
-//   const CustomCard(this._label, this._viewPage, {this.featureCompleted = true});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Card(
-//       elevation: 5,
-//       margin: EdgeInsets.only(bottom: 10),
-//       child: ListTile(
-//         tileColor: Theme.of(context).primaryColor,
-//         title: Text(
-//           _label,
-//           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-//         ),
-//         onTap: () {
-//           if (!featureCompleted) {
-//             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-//                 content:
-//                     const Text('This feature has not been implemented yet')));
-//           } else {
-//             Navigator.push(
-//                 context, MaterialPageRoute(builder: (context) => _viewPage));
-//            }
-//         },
-//       ),
-//     );
-//   }
-// }
-
-
-
-import 'dart:math' as math;
-import 'dart:ui' as ui;
-
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
+// import 'package:demo/src/pose_detector_view.dart';
 import 'package:flutter/material.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
 
-void main() => runApp(MyApp());
+List<CameraDescription> cameras = [];
 
-class MyApp extends StatefulWidget {
-  @override
-  _MyAppState createState() => _MyAppState();
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    cameras = await availableCameras();
+  } on CameraException catch (e) {
+    print('${e.code}  ${e.description}');
+  }
+
+  runApp(MyApp());
 }
 
-class _MyAppState extends State<MyApp> {
-  CameraController? _controller;
-  bool _isReady = false;
-  PoseDetector? _poseDetector;
-  bool _poseDetected = false;
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: HandsRaisedDetectorScreen(),
+    );
+  }
+}
 
+class HandsRaisedDetectorScreen extends StatefulWidget {
+  @override
+  _HandsRaisedDetectorScreenState createState() =>
+      _HandsRaisedDetectorScreenState();
+}
+
+class _HandsRaisedDetectorScreenState extends State<HandsRaisedDetectorScreen> {
+  CameraController? _cameraController;
+  bool _isDetecting = false;
+  int _cameraIndex = -1;
+  final CameraLensDirection initialDirection=CameraLensDirection.back;
   @override
   void initState() {
     super.initState();
     _initializeCamera();
-    _initializePoseDetector();
-  }
-
-  void _initializeCamera() async {
-    final cameras = await availableCameras();
-    final camera = cameras.first;
-    _controller = CameraController(
-      camera,
-      ResolutionPreset.high,
-      enableAudio: false,
-    );
-
-    await _controller!.initialize();
-
-    setState(() {
-      _isReady = true;
-    });
-
-    _controller!.startImageStream((CameraImage image) {
-      _processImage(image);
-    });
-  }
-
-  void _initializePoseDetector() async {
-    _poseDetector = GoogleMlKit.vision.poseDetector();
-  }
-
-  Future<void> _processImage(CameraImage image) async {
-    if (!_isReady || _poseDetector == null) return;
-
-    final inputImage = InputImage.fromCameraImage(
-      image,
-      imageRotation: InputImageRotation.rotation0deg,
-    );
-
-    final poses = await _poseDetector!.process(inputImage);
-
-    setState(() {
-      _poseDetected = poses.isNotEmpty && _areHandsRaised(poses.first);
-    });
-  }
-
-  bool _areHandsRaised(Pose pose) {
-    final leftHand = pose.landmarks[PoseLandmark.leftWrist]!;
-    final rightHand = pose.landmarks[PoseLandmark.rightWrist]!;
-
-    final leftShoulder = pose.landmarks[PoseLandmark.leftShoulder]!;
-    final rightShoulder = pose.landmarks[PoseLandmark.rightShoulder]!;
-
-    final leftElbow = pose.landmarks[PoseLandmark.leftElbow]!;
-    final rightElbow = pose.landmarks[PoseLandmark.rightElbow]!;
-
-    final isLeftHandRaised =
-        leftHand.y < leftShoulder.y && leftHand.y < leftElbow.y;
-    final isRightHandRaised =
-        rightHand.y < rightShoulder.y && rightHand.y < rightElbow.y;
-
-    return isLeftHandRaised && isRightHandRaised;
   }
 
   @override
   void dispose() {
-    _controller?.dispose();
-    _poseDetector?.close();
+    _cameraController?.dispose();
     super.dispose();
+  }
+
+  void _initializeCamera() async {
+    final cameras = await availableCameras();
+    final frontCamera = cameras.firstWhere(
+        (camera) => camera.lensDirection == CameraLensDirection.front);
+    _cameraController = CameraController(frontCamera, ResolutionPreset.high,
+        enableAudio: false);
+    await _cameraController!.initialize();
+    _cameraController!.startImageStream(_processCameraImage);
+
+    if (cameras.any(
+      (element) =>
+          element.lensDirection == initialDirection &&
+          element.sensorOrientation == 90,
+    )) {
+      _cameraIndex = cameras.indexOf(
+        cameras.firstWhere((element) =>
+            element.lensDirection == initialDirection &&
+            element.sensorOrientation == 90),
+      );
+    } else {
+      for (var i = 0; i < cameras.length; i++) {
+        if (cameras[i].lensDirection == initialDirection) {
+          _cameraIndex = i;
+          break;
+        }
+      }
+    }
+
+  }
+
+//   Future<void> _processCameraImage(CameraImage image) async {
+//     if (_isDetecting) return;
+//     _isDetecting = true;
+//     try {
+//       final inputImage = InputImage.fromCameraImage(image, CameraLensDirection.front);
+//       final poseDetector = GoogleMlKit.vision.poseDetector();
+//       final poses = await poseDetector.processImage(inputImage);
+//       final handsRaised = HandsRaisedDetector.isHandsRaised(poses.first.landmarks as List<PoseLandmark>);
+//       debugPrint('Hands Raised: $handsRaised');
+//     } catch (e) {
+//       debugPrint('Error detecting hands raised: $e');
+//     } finally {
+//       _isDetecting = false;
+//     }
+//   }
+
+  Future _processCameraImage(CameraImage image) async {
+    final WriteBuffer allBytes = WriteBuffer();
+    for (final Plane plane in image.planes) {
+      allBytes.putUint8List(plane.bytes);
+    }
+    final bytes = allBytes.done().buffer.asUint8List();
+
+    final Size imageSize =
+        Size(image.width.toDouble(), image.height.toDouble());
+
+    final camera = cameras[_cameraIndex];
+    final imageRotation =
+        InputImageRotationValue.fromRawValue(camera.sensorOrientation);
+    if (imageRotation == null) return;
+
+    final inputImageFormat =
+        InputImageFormatValue.fromRawValue(image.format.raw);
+    if (inputImageFormat == null) return;
+
+    final planeData = image.planes.map(
+      (Plane plane) {
+        return InputImagePlaneMetadata(
+          bytesPerRow: plane.bytesPerRow,
+          height: plane.height,
+          width: plane.width,
+        );
+      },
+    ).toList();
+
+    final inputImageData = InputImageData(
+      size: imageSize,
+      imageRotation: imageRotation,
+      inputImageFormat: inputImageFormat,
+      planeData: planeData,
+    );
+
+    final inputImage =
+        InputImage.fromBytes(bytes: bytes, inputImageData: inputImageData);
+
+    try {
+      final poseDetector = GoogleMlKit.vision.poseDetector();
+      final poses = await poseDetector.processImage(inputImage);
+      final handsRaised = HandsRaisedDetector.isHandsRaised(
+          poses.first.landmarks as List<PoseLandmark>);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Hands Raised: $handsRaised')));
+      // debugPrint('Hands Raised: $handsRaised');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error detecting hands raised: $e')));
+      // debugPrint('Error detecting hands raised: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Flutter Pose Estimator'),
-        ),
-        body: Stack(
-          children: [
-            _isReady
-                ? CameraPreview(_controller!)
-                : const Center(child: CircularProgressIndicator()),
-            _poseDetected
-                ? const Positioned.fill(
-                    child: ColoredBox(color: Colors.green),
-                  )
-                : const Positioned.fill(
-                    child: ColoredBox(color: Colors.red),
-                  ),
-          ],
-        ),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Hands Raised Detector'),
       ),
+      body: _cameraController != null
+          ? CameraPreview(_cameraController!)
+          : Container(),
     );
+  }
+}
+
+class HandsRaisedDetector {
+  HandsRaisedDetector._();
+
+  static Future<bool> isHandsRaised(List<PoseLandmark> landmarks) async {
+    final leftShoulder = landmarks.firstWhere(
+        (landmark) => landmark.type == PoseLandmarkType.leftShoulder);
+    final rightShoulder = landmarks.firstWhere(
+        (landmark) => landmark.type == PoseLandmarkType.rightShoulder);
+    final leftWrist = landmarks
+        .firstWhere((landmark) => landmark.type == PoseLandmarkType.leftWrist);
+    final rightWrist = landmarks
+        .firstWhere((landmark) => landmark.type == PoseLandmarkType.rightWrist);
+
+    final leftShoulderY = leftShoulder.y;
+    final rightShoulderY = rightShoulder.y;
+    final leftWristY = leftWrist.y;
+    final rightWristY = rightWrist.y;
+
+    final handsRaised =
+        leftWristY < leftShoulderY && rightWristY < rightShoulderY;
+    return handsRaised;
   }
 }
