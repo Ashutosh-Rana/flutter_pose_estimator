@@ -348,7 +348,7 @@ class _CameraViewState extends State<CameraView> {
 
     final inputImage =
         InputImage.fromBytes(bytes: bytes, inputImageData: inputImageData);
-
+    
     widget.onImage(inputImage);
   }
 }
