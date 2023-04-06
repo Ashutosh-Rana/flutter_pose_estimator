@@ -51,6 +51,46 @@ class PosePainter extends CustomPainter {
             paintType);
       }
 
+      // void showLilkihood(PoseLandmarkType type){
+      //   final PoseLandmark joint = pose.landmarks[type]!;
+      //   canvas.
+      // }
+
+      final textStyle = TextStyle(
+        color: Colors.black,
+        fontSize: 30,
+      );
+      TextSpan textSpan(String s){
+        return TextSpan(
+          text: s,
+          style: textStyle
+        );
+      }
+      TextPainter textPaint(PoseLandmarkType type){
+        final PoseLandmark joint = pose.landmarks[type]!;
+        return TextPainter(
+          text: textSpan(joint.likelihood.toString()),
+          textDirection: TextDirection.ltr,
+        );
+      }
+      // final textSpan = TextSpan(
+      //   text: 'Hello, world.',
+      //   style: textStyle,
+      // );
+      // final textPainter = TextPainter(
+      //   text: textSpan,
+      //   textDirection: TextDirection.ltr,
+      // );
+      TextPainter textPainter=textPaint(PoseLandmarkType.rightWrist);
+      textPainter.layout(
+        minWidth: 0,
+        maxWidth: size.width,
+      );
+      final xCenter = (size.width - textPainter.width) / 2;
+      final yCenter = (size.height - textPainter.height) / 2;
+      final offset = Offset(xCenter, yCenter);
+      textPainter.paint(canvas, offset);
+
       //Draw arms
       paintLine(
           PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow, leftPaint);
@@ -75,6 +115,8 @@ class PosePainter extends CustomPainter {
           PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee, rightPaint);
       paintLine(
           PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle, rightPaint);
+
+      //check liklihood
     }
   }
 
