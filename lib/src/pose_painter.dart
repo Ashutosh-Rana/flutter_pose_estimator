@@ -1,12 +1,12 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:vector_math/vector_math.dart' as p;
 // import 'package:google_ml_kit/google_ml_kit.dart';
 
 import '../google_mlkit_pose_detection.dart';
 import 'coordinates_translator.dart';
-
+int cnt=0;
+bool isStraight=true;
 class PosePainter extends CustomPainter {
   PosePainter(this.poses, this.absoluteImageSize, this.rotation);
 
@@ -61,12 +61,13 @@ class PosePainter extends CustomPainter {
 
       final textStyle = TextStyle(
         color: Colors.black,
-        fontSize: 30,
+        fontSize: 50,
       );
       TextSpan textSpan(String s) {
         return TextSpan(text: s, style: textStyle);
       }
 
+      //required for scout count also
       TextPainter textPaint(PoseLandmarkType type) {
         final PoseLandmark joint = pose.landmarks[type]!;
         return TextPainter(
@@ -85,7 +86,7 @@ class PosePainter extends CustomPainter {
       final offset = Offset(xCenter, yCenter);
       // textPainter.paint(canvas, offset);
 
-      double checkStraightHands(PoseLandmarkType firstPoint, PoseLandmarkType midPoint,
+      double getAngle(PoseLandmarkType firstPoint, PoseLandmarkType midPoint,
           PoseLandmarkType lastPoint) {
         final PoseLandmark joint1 = pose.landmarks[firstPoint]!;
         final PoseLandmark joint2 = pose.landmarks[midPoint]!;
@@ -97,19 +98,47 @@ class PosePainter extends CustomPainter {
           result = 360.0 -
               result; // Always get the acute representation of the angle
         }
-        
         return result;
       }
       
-      var result1=checkStraightHands(PoseLandmarkType.rightWrist, PoseLandmarkType.rightElbow, PoseLandmarkType.rightShoulder);
-      var result2=checkStraightHands(PoseLandmarkType.leftWrist, PoseLandmarkType.leftElbow, PoseLandmarkType.leftShoulder);
+      var result1=getAngle(PoseLandmarkType.rightWrist, PoseLandmarkType.rightElbow, PoseLandmarkType.rightShoulder);
+      var result2=getAngle(PoseLandmarkType.leftWrist, PoseLandmarkType.leftElbow, PoseLandmarkType.leftShoulder);
+
+      var rtEl=getAngle(PoseLandmarkType.rightWrist, PoseLandmarkType.rightElbow, PoseLandmarkType.rightShoulder);
+      var ltEl=getAngle(PoseLandmarkType.leftWrist, PoseLandmarkType.leftElbow, PoseLandmarkType.leftShoulder);
+      var rtHip=getAngle(PoseLandmarkType.rightShoulder, PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee);
+      var ltHip=getAngle(PoseLandmarkType.leftShoulder, PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee);
+      var rtKnee=getAngle(PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle);
+      var ltKnee=getAngle(PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle);
+
       var circlePaint;
-        if (result1 >= 170 && result2>=170) {
+        if (rtEl <= 50 && ltEl<=50 && rtHip <= 50 && ltHip<=50 && rtKnee <= 50 && ltKnee<=50 ) {
           circlePaint = Paint()..color = Colors.green;
         } else {
           circlePaint = Paint()..color = Colors.red;
         }
-        canvas.drawCircle(Offset(20, 20), 10, circlePaint);
+        canvas.drawCircle(Offset(20, 20), 20, circlePaint);
+
+        TextPainter countPose() {
+        if (isStraight && rtEl <= 50 && ltEl<=50 && rtHip <= 50 && ltHip<=50 && rtKnee <= 50 && ltKnee<=50 ) {
+          cnt++;
+          isStraight=false;
+        }
+        if (rtEl <= 50 && ltEl<=50 && rtHip >= 170 && ltHip>=170 && rtKnee >= 170 && ltKnee>=170 ) {
+          isStraight=true;
+        }
+        return TextPainter(
+          text: textSpan('Count : ${cnt.toString()}'),
+          textDirection: TextDirection.ltr,
+        );
+      }  
+      TextPainter cntPose=countPose();
+      cntPose.layout(
+        minWidth: 0,
+        maxWidth: size.width, 
+      );
+      cntPose.paint(canvas, Offset(20, 60));
+
 
       //Draw arms
       paintLine(

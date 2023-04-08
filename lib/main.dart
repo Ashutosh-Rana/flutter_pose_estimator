@@ -1,7 +1,7 @@
 import 'package:camera/camera.dart';
 // import 'package:demo/src/pose_detector_view.dart';
 import 'package:flutter/material.dart';
-import 'package:google_ml_kit_example/src/detector_views.dart';
+import 'src/detector_views.dart';
 
 
 
@@ -47,7 +47,7 @@ class Home extends StatelessWidget {
               child: Column(
                 children: [
                   ExpansionTile(
-                    title: const Text('Vision APIs'),
+                    title: const Text('Vision APIs '),
                     children: [
                       CustomCard('Pose Detection', PoseDetectorView()),
                     ],

@@ -18,7 +18,7 @@ class CameraView extends StatefulWidget {
       this.text,
       required this.onImage,
       this.onScreenModeChanged,
-      this.initialDirection = CameraLensDirection.back})
+      this.initialDirection = CameraLensDirection.front})
       : super(key: key);
 
   final String title;
